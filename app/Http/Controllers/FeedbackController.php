@@ -2,29 +2,34 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\FeedbackQuestion;
 use App\Models\Feedback;
 use Illuminate\Http\Request;
 
 class FeedbackController extends Controller
 {
-    public function store(Request $request)
+    // Get all feedback questions
+    public function getFeedbackQuestions()
+    {
+        $questions = FeedbackQuestion::all();
+        return response()->json($questions);
+    }
+
+    // Submit feedback
+    public function submitFeedback(Request $request)
     {
         $request->validate([
-            'feedback' => 'required',
+            'answers' => 'required|array',
+            'answers.*.question_id' => 'required|exists:feedback_questions,id',
+            'answers.*.choice' => 'required|string',
         ]);
 
-        $feedback = new Feedback();
-        $feedback->user_id = auth()->user()->id;
-        $feedback->feedback = $request->feedback;
-        $feedback->save();
+        // Save the feedback
+        Feedback::create([
+            'user_id' => auth()->user()->id,
+            'answers' => json_encode($request->answers),
+        ]);
 
-        return response()->json(['message' => 'Feedback submitted successfully.']);
-    }
-
-    public function history()
-    {
-        $feedback = Feedback::where('user_id', auth()->user()->id)->get();
-        return response()->json($feedback);
+        return response()->json(['message' => 'Feedback submitted successfully!']);
     }
 }
-
